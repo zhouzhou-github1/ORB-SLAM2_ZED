@@ -1,0 +1,248 @@
+深度图像包：
+1、将ZED摄像机连接点ROS网络 启动ROS节点
+	roslaunch zed_wrapper zed2.launch
+2、运行订户节点run the subscriber node 
+	rosrun zed_depth_sub_tutorial zed_depth_sub
+可以得到深度信息
+/**********运行以后没有反应，节点连接成功但是深度信息出不来****
+
+
+3D建图
+### Spatial Mapping
+The Spatial Mapping can be enabled automatically when the node start setting the parameter `mapping/mapping_enabled` to `true` in the file `common.yaml`.
+The Spatial Mapping can be enabled/disabled manually calling the services `start_3d_mapping` and `stop_3d_mapping`.
+
+- [RTAB-Map](http://introlab.github.io/rtabmap/): See [zed_rtabmap_example](https://github.com/stereolabs/zed-ros-examples/tree/master/examples/zed_rtabmap_example/README.md)
+https://blog.csdn.net/banzhuan133/article/details/81876739   slam_bot-master
+
+相机轨迹和三维重建
+https://blog.csdn.net/sinat_39416814/article/details/88172968
+
+
+提供了一些教程来了解如何在ROS环境中使用ZED节点：
+-[图像订阅教程](https://github.com/stereolabs/zed-ros-examples/tree/master/tutorials/zed\u video\u sub\u tutorial/README.md)
+
+-[深度订阅教程](https://github.com/stereolabs/zed-ros-examples/tree/master/tutorials/zed\u depth\u sub\u tutorial/README.md)
+
+-[跟踪订阅教程](https://github.com/stereolabs/zed-ros-examples/tree/master/tutorials/zed\u tracking\u sub\u tutorial/README.md)
+
+-[传感器数据订阅教程](https://github.com/stereolabs/zed-ros-examples/blob/master/tutorials/zed\u sensors\u sub\u tutorial/README.md)
+
+-[目标检测订阅教程](https://github.com/stereolabs/zed-ros-examples/blob/master/tutorials/zed\u obj\u det\u sub\u tutorial/README.md)
+
+
+/*********************************************************
+ *物体检测记录2021.03.18 早11：00   详情：拍摄了一个小视频
+ *1、使用./ZED_Object_Detection检测三维物体时，首先自动下载了一个*AI model*(暂时不清楚这个model放在哪和具体是什么)
+ *2、下载完以后一共有三个画面 
+ * ①类似与深度图，但是里面会框选物体(左相机)
+ * ②正常画面，会进行三维物体的检测
+ * ③轨迹图  以相机为顶点的三角图。 里面有物体的运动轨迹(但好像不是很跟随这类的)
+ *3、使用出现的现象：
+ * ①使用手或者胳膊出现在画面中时会捕捉并框柱
+ * ②使用手机、卫生纸、键盘等其他物品出现在画面中时不会检测出来，但是可以检测到偶尔出现的手
+ * ③当手伸进袖子里，前一段不会检测到，后面伸出到肘关节时就又能检测到
+ *4、查看程序可以检测人与车
+ ********************************************************/
+
+本地流官方链接(只有大致说明，没有其他的)
+https://www.stereolabs.com/docs/video/streaming/
+
+************
+有关Could not find a package configuration file provided by “CSparse” with any of the following names:问题的解决方案
+两个网址：https://blog.csdn.net/abc1225741797/article/details/106546634     
+  	  https://blog.csdn.net/qq_27848347/article/details/99683027     在sophus中编译
+	  https://blog.csdn.net/qq_15642411/article/details/83656855    用set的方法进行寻找
+
+
+解决办法如下，主要是CMakeLists.txt的书写上要加几行代码
+贴上我的：
+本来是这样的就会报错，
+list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules )
+find_package(G2O REQUIRED)
+include_directories(
+${G2O_INCLUDE_DIRS}
+"/usr/include/eigen3"
+)
+修改为：
+
+list( APPEND CMAKE_MODULE_PATH /home/hri/ThirdParty/g2o/cmake_modules )
+set(G2O_ROOT /usr/local/include/g2o)
+find_package(G2O REQUIRED)
+include_directories(
+${G2O_INCLUDE_DIRS}
+"/usr/include/eigen3"
+)
+再进行编译就好了！
+
+
+
+
+ORB-SLAM2 在线构建稠密点云（一）   	是深度相机，而双目计算深度的方式不同
+ORB-SLAM2 在线构建稠密点云（二）	中间说了一段双目的，但是最后还是Astra深度相机
+ORB-SLAM2 在线构建稠密点云（三）	深度相机结合了驱动节点
+ORB-SLAM2 在线构建稠密点云（四）	是说双目相机的，应该刚开始就直接从四开始
+  四网址：  https://blog.csdn.net/crp997576280/article/details/104812648
+
+
+
+/************************************************************************************
+桌面上的ros/orb-slam2-point是可以正常编译的文件，但是运行时会卡住。
+./Examples/RGB-D/rgbd_tum Vocabulary/ORBvoc.txt Examples/RGB-D/TUM1.yaml ~/dataset/rgbd_dataset_freiburg1_room/  ~/dataset/rgbd_dataset_freiburg1_room/associate.txt
+刚开始发现电脑上没有对应的数据集，下载对应数据集后仍然是卡住，这个问题还没有解决。
+*************************************************************************************/
+ORB_SLAM2_PointCloud 代码只支持RGBD模式的相机
+
+
+
+ROS测试相机和双目跑KITTI数据集：	https://blog.csdn.net/ouyangandy/article/details/79370273
+/****************************************************************************************
+ * 时间：2021.03.23 19:00		imgae:ZED_ORBSLAM2				*
+ * ZED相机跑ORB-SLAM2：	https://blog.csdn.net/sinat_38343378/article/details/79153834	*
+ * 编译：	chmod +x build_ros.sh							*
+ * 	./build_ros.sh									*
+ * 1、roscore										*
+ * 2、在~/Desktopp/ros/workros_ws/src/orb-slam2-point下运行				*
+ * 	rosrun ORB_SLAM2 Stereo Vocabulary/ORBvoc.txt Examples/Stereo/EuRoC.yaml true	*
+ * 3、roslaunch zed2_wrapper display.launch						*
+ * 跑是跑成功了，但是那个点云是真的感觉不是很好啊，而且相机偶尔就会卡住			*
+ * $$$$$$$$$$$$$$$但是这个上面好像有保存地图$$$$$$$$$$$$$$$				*
+ ****************************************************************************************/
+这个也可以看一看	https://blog.csdn.net/KID_yuan/article/details/101272481/
+
+数据集链接：	https://blog.csdn.net/crp997576280/article/details/103340020
+
+/****************************************************************************************
+ * 时间：2021.03.23 20:00
+ * 双目数据集运行	https://zhuanlan.zhihu.com/p/59499965
+ * ******数据集运行;
+ * 执行命令:ORB-SLAM2支持单目、双目和RGBD数据，这里选择mono_kitti的单目数据集来运行和调试。
+ * 运行命令格式为：
+ * 	./mono_kitti path_to_vocabulary path_to_settings path_to_sequence
+ * 该命令共有4个参数:
+ * ①mono_kitti:为ORB-SLAM2编译生成的针对MONO_KITTI数据集的可执行文件，一般路径为ORB-SLAM2工程目录下Examples/Monocular/mono_kitti；
+ * 
+ * ②path_to_vocabulary为所选词典的路径，路径为ORB_SLAM2/Vocabulary/ORBvoc.txt；
+ * 
+ * ③path_to_settings为配置文件，存放在ORB-SLAM2/Examples/Monocular下，运行时选择了KITTI00-02.yaml(可选择别的)，该配置文件中存放的相机的内参和外参，提取特征时候图像金字塔相关参数，可视化过程中用到的参数；
+ * 
+ * ④path_to_sequence为数据集路径，这个根据自己下载的kitti数据集路径来指定。这里在工作空间中建立文件夹dataset来存放数据集00，故目录为 …/dataset/sequences/00/ (…/表示上层目录，./表示当前目录)
+ * 在ORB_SLAM2文件夹下打开终端，执行以下命令来运行程序：
+ * 
+ * ./Examples/Monocular/mono_kitti Vocabulary/ORBvoc.txt Examples/Monocular/KITTI00-02.yaml ../dataset/sequences/00/
+ * 
+ * 
+ * 自己跑的：：：：：：：：：：：：   image: ORB_KITTI01.png
+ * pwd	/home/nvidia/Desktop/ros/workros_ws/src/orb-slam2-point
+ * 运行：./Examples/Stereo/stereo_kitti Vocabulary/ORBvoc.txt Examples/Stereo/KITTI00-02.yaml ~/Desktop/dataset/01
+ * 地图现在这个是不能保存的，ORB-SLAM2不带保存地图   
+ * 看https://blog.csdn.net/kyjl888/article/details/88416122    https://blog.csdn.net/u014709760/article/details/86319090
+ *  带ZED相机 带源码  https://blog.csdn.net/qq_34254510/article/details/79969046
+  	上一个的修改版https://blog.csdn.net/m0_38031722/article/details/101029609
+ ****************************************************************************************/
+
+/****************************************************************************************
+ * ubuntu进入虚拟环境：workon zed2-1
+ * ubuntu退出虚拟环境：deactivate
+ *
+ ****************************************************************************************/
+
+/****************************************************************************************
+ * 时间：2021.03.25 弄了三个小时的保存地图github上下载来的代码，还是编译有问题..
+ * 决定跟着网上的步骤来，自己去写保存和加载地图的代码 参考博客:https://blog.csdn.net/u014709760/article/details/86319090
+ ************保存地图
+ * 1、修改Map.h文件  加入保存地图函数声明、一个变量
+      修改Map.cc文件中  四个函数的实现
+
+ * 2、修改Converter相关文件
+	在Converter.cc类里面添加一个矩阵和四元数相互转换的函数cv::Mat Converter::toCvMat(const std::vector<float>& v)
+ * 3、System文件修改	对system.h和system.cc文件进行修改，分别添加声明和定义。	
+ * 4、在双目的stereo_kitti.cc中加入保存地图的语句
+ * 5、开始测试  运行结束了，但是没有生成对应的map.bin文件
+	原因应该是执行的还是之前stereo_kitti文件，并没有转过去。
+	因为之前用的build_ros.sh	所以我在主目录下用了下cmake ..结果出现错误了
+	经测验，源文件用build.sh 是没有问题的，但是修改后用build.sh就有错了
+
+ ****************************************************************************************/
+有个大佬推荐把ORB-SLAM3的地图保存弄到ORB-SLAM2中。
+桌面上的orb-slam2-point 解压好的是正常的，没有保存地图的。。。。。。  压缩包是带保存地图的，但是运行有错。
+
+SLAM群里的推荐的保存地图 https://github.com/Jiankai-Sun/ORB_SLAM2_Enhanced
+/****************************************************************************************
+ * 时间：2021.03.29  github上下载了一个   feng-zhou-ORB_SLAM2_detailed_comments-master  ORB_SLAM2-master
+ * 1、问题1：多个ORB-SLAM2编译的问题
+ * 很好，又出现了那个熟悉而又陌生的错误。。。。多个ORB-SLAM2编译的问题。软链接啥的网上方法都不行。
+ * $$嗯我又尝试了一个新招，我直接把那个文件名字改成能编译的ORB-SLAM2名字，然后编译，在修改CMake里面的东西$$
+ * 对的他又出错了，不过不是之前的那种，只是很多种未定义的引用(Zed2相机库应该是) 
+ * 当时我使用了最简单原始粗暴的办法，直接在那个.cc文件里面include了n个头文件。。。
+ * 功夫不负有心人，他编译通过了。 不过是build_ros.sh   盲猜如果是build.sh会出错，先不管了。 
+ * 2、出现了之前那个 static_assert(is_same<typename _Alloc::value_type, value_type>::value,错误
+ * 解决：https://www.freesion.com/article/96671072666/   
+
+ * 现在这个新工程 build.sh和build_ros.sh都是可以正常编译的。
+
+ * $$$$$$运行$$$$$$
+ * 1、运行数据集时遇到	Tracking.cc :: mVelocity is empty, TrackReferenceKeyFrame();
+		  	Tracking.cc :: Track(), Now mState is LOST. 	的问题
+ * 运行：./Examples/Stereo/stereo_kitti Vocabulary/ORBvoc.txt Examples/Stereo/KITTI00-02.yaml ~/Desktop/dataset/01
+ * 新发现：如果问的三个问题都选n的话是可以正常运行数据集的，并且可以保存地图 MapPointandKeyFrame.bin
+ *  那么新问题来了，那三个问题是个什么鬼  System.cc中
+ * ①Do you want to save images from the viewer?(y/n)	是否要保存查看器中的图像  y和n存在SaveImg中 
+	回答Y后，会将mpViewer->mbSaveImg = true；将这个变量设置为true
+	当此变量为true时，会在Viewer.cc中通过判断，然后将image保存在Pictures中
+ * ②Do you want to run pure localization?(y/n)		你想运行纯本地化吗？	  y和n存在IsPureLocalization中
+	回答Y后，会调用 ActivateLocalizationMode();这个函数	---激活定位模式---	
+	这个函数会将mbActivateLocalizationMode这个变量设置为true 
+	回答N后，应该会将mbDeActivateLocalizationMode这个变量设置为true
+ * ③Do you want to load the map?(y/n)			是否加载地图？ 	  	  y和n存在IsLoadMap中
+	回到Y后，会执行mpMap->Load(strPathMap, mySystemSetting, mpKeyFrameDatabase);	这个函数在Map.cc中
+	mpMap是通过调用的Map();生成的地图	
+ * ④设置相机参数   具体设置函数在SystemSetting.cc(20行)中，然后是在System.cc(165行)中进行幅值的。
+ 设置相机参数的函数为bool SystemSetting::LoadSystemSetting(const std::string strSettingPath) 对应的地址
+	对应的地址参数在System.cc中为strPathSystemSetting,再往上为strSettingsFile 为System构造函数的入口参数。
+ * ⑤上面的那几个都是定义的构造类等等，主函数在Stereo_kitti.cc等要运行的几个中
+ 	会有几个入口参数的幅值。argc为参数个数，必须等于4. argv为4个参数数组
+./Examples/Stereo/stereo_kitti Vocabulary/ORBvoc.txt Examples/Stereo/KITTI00-02.yaml ~/Desktop/dataset/01
+ 	argv[1]为strVocFile，对应的为System的第一个入口参数。即对应的运行文件地址。
+	argv[2]为strSettingFile，对应幅值为System的第二个入口参数。即相机参数地址文件
+ 	argv[3]为LoadImages的第一个参数 。即strPathToSequence  这个参数应该就是去往数据集的地址
+
+ * 加载地图时，刚加载一下就卡住了。emmm原来需要时间去加载，多等会就有了。不过还是一步一步运行的。
+   加载数据集的地图是没有问题的，具体看视频 "视频重载_video"
+
+ * 2、直接运行zed2相机   
+	不能运行，修改ros_zed.cc文件的信息  message  
+ * 	先运行roslaunch zed_wrapper zed2.launch
+ * 再运行rosrun ORB_SLAM2 Zed /home/nvidia/Desktop/ros/workros_ws/src/orb-slam2-point/Vocabulary/ORBvoc.txt /home/nvidia/Desktop/ros/workros_ws/src/orb-slam2-point/Examples/Stereo/EuRoC.yaml true
+ *	出现的问题是能正确读EuRoC.yaml文件中相机的参数。但是还会在这个文件中读取系统参数----这个东西在哪
+  找到了对应的文件，应该是SystemSetting.cc  开始就是。。。。    路径的问题******
+
+ *** 正确的运行： rosrun ORB_SLAM2 Stereo /home/nvidia/Desktop/ros/workros_ws/src/orb-slam2-point/Vocabulary/ORBvoc.txt /home/nvidia/Desktop/ros/workros_ws/src/orb-slam2-point/Examples/Stereo/EuRoC.yaml true
+	在orb-slam2-point里面运行！！！   运行没问题，但是可能又有一个问题..貌似没有保存地图       
+	****在Viewer.cc中增加了一个按钮，按下后可以实时保存地图。。。reset以后也会将地图清0.
+   **but  but  but   加载的时候出现了：   段错误（核心已转储）
+         对应的代码为：	mpMap->Load(strPathMap, mySystemSetting, mpKeyFrameDatabase);  在Map.cc的287行   
+	错误排查到了Map.cc的读取关键帧地方****   
+    ①根据群里一个人指点的，删除掉ORB-SLAM2和G2O里CMakeList 的  " -march=native " 
+	删掉两个后，还是出现相同的错误。        
+    ②根据之前群里发的   改Pangolin 的 display_x11.cpp  还是不行。。
+    ③根据一个百度说的。。	https://blog.csdn.net/m0_38031722/article/details/101029609
+	他这个错误和我的不一样，但是可以试试。好刺激啊他真的可以，难道路径问题这么大  System.cc的154行
+	最终修改以后竟然成功了，但是还是有点想不太明白为啥路径的原因这么大。
+
+使用数据集的那种输入方式重载地图出现的错误：
+Map.cc :: Map reading from:/home/nvidia/Desktop/ros/workros_ws/src/orb-slam2-point/MapPointandKeyFrame.bin
+Map.cc :: The number of MapPoints:3523
+Map.cc :: The number of KeyFrames:3322
+text2   i:0    nKeyFrames:3322
+terminate called after throwing an instance of 'std::length_error'
+  what():  vector::reserve
+已放弃 (核心已转储)	
+  
+使用ZED相机重载地图出现的错误：  
+Map.cc :: Map reading from:/home/nvidia/Desktop/ros/workros_ws/src/orb-slam2-point/MapPointandKeyFrame.bin
+Map.cc :: The number of MapPoints:3523
+Map.cc :: The number of KeyFrames:3322
+text2   i:0    nKeyFrames:3322
+段错误 (核心已转储)        
+ ****************************************************************************************/
